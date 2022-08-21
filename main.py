@@ -100,5 +100,10 @@ def active() -> None:
     console.print(bar, percentage, "\n")
 
 
+@app.command()
+def abort() -> None:
+    requests.delete(SERVER_ADDR + "/active")
+
+
 if __name__ == "__main__":
     app()
