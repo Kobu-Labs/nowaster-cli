@@ -1,12 +1,12 @@
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel
 
 
 class TrackEntryBase(BaseModel):
     category: str
-    duration:  int
+    duration: int
     description: Optional[str] = None
 
 
@@ -21,4 +21,3 @@ class TrackEntry(TrackEntryBase):
 
     class Config:
         orm_mode = True
-

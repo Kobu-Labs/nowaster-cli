@@ -1,15 +1,14 @@
-from typing import List, Optional
 import random
+from typing import List, Optional
 
 import requests
-
-import schemas
-
+import typer
+from rich.color import ANSI_COLOR_NAMES
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
-from rich.color import ANSI_COLOR_NAMES
-import typer
+
+import schemas
 
 app = typer.Typer()
 console = Console()
@@ -25,7 +24,7 @@ def new(
 ) -> None:
     response = requests.post(
         SERVER_ADDR + "/entries",
-       json={"category": category, "duration": duration, "description": description},
+        json={"category": category, "duration": duration, "description": description},
     )
     print(f"created {response.json()}")
 
@@ -54,9 +53,17 @@ def all(show_ids: bool = typer.Option(False, "--id")) -> None:
         category_rich = Text(e.category)
         category_rich.stylize(category_colors[e.category])
         if show_ids:
-            table.add_row(str(e.id), category_rich, str(e.duration), str(e.start_date), str(e.end_date))
+            table.add_row(
+                str(e.id),
+                category_rich,
+                str(e.duration),
+                str(e.start_date),
+                str(e.end_date),
+            )
         else:
-            table.add_row(category_rich, str(e.duration), str(e.start_date), str(e.end_date))
+            table.add_row(
+                category_rich, str(e.duration), str(e.start_date), str(e.end_date)
+            )
 
     console.print(table)
 
