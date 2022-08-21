@@ -1,10 +1,12 @@
 import random
+from datetime import datetime
 from typing import List, Optional
 
 import requests
 import typer
 from rich.color import ANSI_COLOR_NAMES
 from rich.console import Console
+from rich.progress_bar import ProgressBar
 from rich.table import Table
 from rich.text import Text
 
@@ -14,6 +16,11 @@ app = typer.Typer()
 console = Console()
 
 SERVER_ADDR = "http://127.0.0.1:8000"
+__COLORS = list(ANSI_COLOR_NAMES.keys())
+
+
+def get_random_style() -> str:
+    return random.choice(__COLORS)
 
 
 @app.command()
@@ -48,10 +55,9 @@ def all(show_ids: bool = typer.Option(False, "--id")) -> None:
 
     for e in data:
         if not e.category in category_colors:
-            category_colors[e.category] = random.choice(list(ANSI_COLOR_NAMES.keys()))
+            category_colors[e.category] = get_random_style()
 
-        category_rich = Text(e.category)
-        category_rich.stylize(category_colors[e.category])
+        category_rich = Text(e.category, style=category_colors[e.category])
         if show_ids:
             table.add_row(
                 str(e.id),
@@ -66,6 +72,32 @@ def all(show_ids: bool = typer.Option(False, "--id")) -> None:
             )
 
     console.print(table)
+
+
+def get_datetime_progress_ratio(
+    start: datetime, end: datetime, progress: datetime
+) -> float:
+    return (progress.timestamp() - start.timestamp()) / (
+        end.timestamp() - start.timestamp()
+    )
+
+
+@app.command()
+def active() -> None:
+    data = requests.get(SERVER_ADDR + "/entries/active").json()
+    if not data:
+        typer.echo("No active session")
+        return
+
+    track_e = schemas.TrackEntry(**data)
+
+    completed = get_datetime_progress_ratio(
+        track_e.start_date, track_e.end_date, datetime.now()
+    )
+    bar = ProgressBar(completed=completed * 100, width=70, complete_style="green")
+    percentage = Text(f"  {bar.percentage_completed:.2f}%", get_random_style())
+
+    console.print(bar, percentage, "\n")
 
 
 if __name__ == "__main__":
