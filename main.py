@@ -57,8 +57,17 @@ def parse_time_unit(unit: str) -> float:
 @app.command()
 def new(
     category: str = typer.Option(..., "--cat", "-c"),
-    duration_raw: str = typer.Option(..., "--dur", "-d"), description: Optional[str] = None,
+    duration_raw: str = typer.Option(..., "--dur", "-d"),
+    description: Optional[str] = None,
 ) -> None:
+    active_session = get_active_session()
+    if active_session is not None:
+        should_continue = typer.confirm(
+            "One session is already active, continue anyways?"
+        )
+        if not should_continue:
+            return
+
     duration = parse_time_unit(duration_raw)
     response = requests.post(
         SERVER_ADDR + "/entries",
@@ -74,7 +83,7 @@ def fetch_all() -> List[schemas.TrackEntry]:
 
 @app.command()
 def all(show_ids: bool = typer.Option(False, "--id")) -> None:
-    data = fetch_all()
+    sessions = fetch_all()
 
     table = Table()
     if show_ids:
@@ -84,7 +93,7 @@ def all(show_ids: bool = typer.Option(False, "--id")) -> None:
 
     category_colors = {}
 
-    for e in data:
+    for e in sessions:
         if not e.category in category_colors:
             category_colors[e.category] = get_random_style()
 
@@ -113,17 +122,23 @@ def get_datetime_progress_ratio(
     )
 
 
-@app.command()
-def active() -> None:
+def get_active_session() -> Optional[schemas.TrackEntry]:
     data = requests.get(SERVER_ADDR + "/entries/active").json()
     if not data:
-        typer.echo("No active session")
+        return None
+
+    return schemas.TrackEntry(**data)
+
+
+@app.command()
+def active() -> None:
+    session = get_active_session()
+    if session is None:
+        print("No active session")
         return
 
-    track_e = schemas.TrackEntry(**data)
-
     completed = get_datetime_progress_ratio(
-        track_e.start_date, track_e.end_date, datetime.now()
+        session.start_date, session.end_date, datetime.now()
     )
     bar = ProgressBar(completed=completed * 100, width=70, complete_style="green")
     percentage = Text(f"  {bar.percentage_completed:.2f}%", get_random_style())
