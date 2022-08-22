@@ -21,12 +21,8 @@ __COLORS = list(ANSI_COLOR_NAMES.keys())
 
 MIN_HOURS = 0.1
 MIN_MINUTES = 1
-
-
 def get_random_style() -> str:
     return random.choice(__COLORS)
-
-
 def parse_time_unit(unit: str) -> float:
     if len(unit) <= 1:
         raise typer.BadParameter("Either number or unit was not passed")
