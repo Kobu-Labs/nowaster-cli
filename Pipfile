@@ -7,11 +7,13 @@ name = "pypi"
 typer = {extras = ["all"], version = "*"}
 requests = "*"
 pydantic = "*"
+types-requests = "*"
 
 [dev-packages]
 mypy = "*"
 isort = "*"
 black = "*"
+types-requests = "*"
 
 [requires]
 python_version = "3.10"

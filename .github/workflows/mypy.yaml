@@ -3,7 +3,7 @@ name: Mypy Type Checker
 on: [push, pull_request]
 
 jobs:
-  build:
+  typecheck:
     runs-on: ubuntu-latest
 
     steps:
