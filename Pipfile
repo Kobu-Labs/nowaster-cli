@@ -8,6 +8,7 @@ typer = {extras = ["all"], version = "*"}
 requests = "*"
 pydantic = "*"
 types-requests = "*"
+python-dotenv = "*"
 
 [dev-packages]
 mypy = "*"

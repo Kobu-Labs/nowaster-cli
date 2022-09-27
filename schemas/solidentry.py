@@ -4,20 +4,19 @@ from typing import Optional
 from pydantic import BaseModel
 
 
-class TrackEntryBase(BaseModel):
+class EntryBase(BaseModel):
     category: str
-    duration: int
+    start_date: datetime
+    end_date: datetime
     description: Optional[str] = None
 
-
-class TrackEntryCreate(TrackEntryBase):
+class SolidEntryCreate(EntryBase):
     ...
 
 
-class TrackEntry(TrackEntryBase):
-    id: int
-    start_date: datetime
-    end_date: datetime
-
+class SolidEntry(EntryBase):
     class Config:
         orm_mode = True
+
+    id: int
+

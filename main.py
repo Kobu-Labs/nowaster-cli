@@ -1,3 +1,4 @@
+import json
 import random
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -9,15 +10,15 @@ from rich.console import Console
 from rich.progress_bar import ProgressBar
 from rich.table import Table
 from rich.text import Text
+from config import ADDRESS
+from schemas.recordentry import RecordEntryInDb
 
-import schemas
+from schemas.solidentry import SolidEntry, SolidEntryCreate
 
 app = typer.Typer()
 console = Console()
 
-SERVER_ADDR = "http://127.0.0.1:8000"
 __COLORS = list(ANSI_COLOR_NAMES.keys())
-
 
 MIN_HOURS = 0.1
 MIN_MINUTES = 1
@@ -56,9 +57,9 @@ def parse_time_unit(unit: str) -> float:
 
 @app.command()
 def new(
-    category: str = typer.Option(..., "--cat", "-c"),
-    duration_raw: str = typer.Option(..., "--dur", "-d"),
-    description: Optional[str] = None,
+    category: str = typer.Option(..., "--cat", "-c", prompt="cat"),
+    duration_raw: str = typer.Option(..., "--dur", "-d", prompt="dur"),
+    description: str = typer.Option("", "--description", prompt="Desc"),
 ) -> None:
     active_session = get_active_session()
     if active_session is not None:
@@ -69,16 +70,19 @@ def new(
             return
 
     duration = parse_time_unit(duration_raw)
+    start_date = datetime.now()
+    end_date = start_date + timedelta(minutes=duration)
+    entry = SolidEntryCreate(category=category, start_date=start_date, end_date=end_date, description=description)
     response = requests.post(
-        SERVER_ADDR + "/entries",
-        json={"category": category, "duration": duration, "description": description},
+        ADDRESS + "/entry/solid",
+        data = entry.json()
     )
     print(f"created {response.json()}")
 
 
-def fetch_all() -> List[schemas.TrackEntry]:
-    data = requests.get(SERVER_ADDR + "/" + "entries").json()
-    return [schemas.TrackEntry(**e) for e in data]
+def fetch_all() -> List[SolidEntry]:
+    data = requests.get(ADDRESS + "/entry/solid").json()
+    return [SolidEntry(**e) for e in data]
 
 
 @app.command()
@@ -94,6 +98,7 @@ def all(show_ids: bool = typer.Option(False, "--id")) -> None:
     category_colors = {}
 
     for e in sessions:
+        duration = str((e.end_date - e.start_date).total_seconds()// 60)
         if not e.category in category_colors:
             category_colors[e.category] = get_random_style()
 
@@ -102,13 +107,12 @@ def all(show_ids: bool = typer.Option(False, "--id")) -> None:
             table.add_row(
                 str(e.id),
                 category_rich,
-                str(e.duration),
                 str(e.start_date),
                 str(e.end_date),
             )
         else:
             table.add_row(
-                category_rich, str(e.duration), str(e.start_date), str(e.end_date)
+                category_rich, duration, str(e.start_date), str(e.end_date)
             )
 
     console.print(table)
@@ -122,12 +126,12 @@ def get_datetime_progress_ratio(
     )
 
 
-def get_active_session() -> Optional[schemas.TrackEntry]:
-    data = requests.get(SERVER_ADDR + "/entries/active").json()
+def get_active_session() -> Optional[SolidEntry]:
+    data = requests.get(ADDRESS + "/entry/solid/active").json()
     if not data:
         return None
 
-    return schemas.TrackEntry(**data)
+    return SolidEntry(**data)
 
 
 @app.command()
@@ -148,8 +152,51 @@ def active() -> None:
 
 @app.command()
 def abort() -> None:
-    requests.delete(SERVER_ADDR + "/active")
+    requests.delete(ADDRESS + "/entry/solid")
 
+
+@app.command()
+def record(
+    category: str = typer.Option(..., "--cat", "-c", prompt="cat"),
+    description: str = typer.Option("", "--description", prompt="Desc"),
+    ) -> None:
+    active_session = get_active_session()
+    if active_session is not None:
+        should_continue = typer.confirm(
+            "One session is already active, continue anyways?"
+        )
+        if not should_continue:
+            return
+    response = requests.post(ADDRESS + "/entry/record", json={"category": category,"description":description})
+    print(response)
+
+@app.command()
+def timed_active() -> None:
+    response = requests.get(ADDRESS + "/entry/record/active")
+    sessions = [RecordEntryInDb(**e) for e in response.json()]
+
+    table = Table()
+    for col in ("ID", "Category", "Start"):
+        table.add_column(col)
+
+    category_colors = {}
+
+    for e in sessions:
+        if not e.category in category_colors:
+            category_colors[e.category] = get_random_style()
+
+        category_rich = Text(e.category, style=category_colors[e.category])
+        table.add_row(
+             str(e.id), category_rich,str(e.start_date)
+        )
+
+    console.print(table)
+
+@app.command()
+def finish() -> None:
+    response = requests.post(ADDRESS + f"/entry/record/finish/")
+    print(response.json())
+    
 
 if __name__ == "__main__":
     app()
