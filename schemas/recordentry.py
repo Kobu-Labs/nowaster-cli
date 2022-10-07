@@ -19,4 +19,3 @@ class RecordEntryInDb(RecordEntryBase):
 
     id: int
     start_date: datetime
-

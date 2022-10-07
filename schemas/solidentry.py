@@ -10,6 +10,7 @@ class EntryBase(BaseModel):
     end_date: datetime
     description: Optional[str] = None
 
+
 class SolidEntryCreate(EntryBase):
     ...
 
@@ -19,4 +20,3 @@ class SolidEntry(EntryBase):
         orm_mode = True
 
     id: int
-
