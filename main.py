@@ -86,6 +86,10 @@ def fetch_all() -> List[SolidEntry]:
     return [SolidEntry(**e) for e in data]
 
 
+def format_date(datetime_obj: datetime) -> str:
+    return datetime.strftime(datetime_obj, "%Y-%m-%d %H:%M")
+
+
 @app.command()
 def all(show_ids: bool = typer.Option(False, "--id")) -> None:
     sessions = fetch_all()
@@ -108,11 +112,16 @@ def all(show_ids: bool = typer.Option(False, "--id")) -> None:
             table.add_row(
                 str(e.id),
                 category_rich,
-                str(e.start_date),
-                str(e.end_date),
+                format_date(e.start_date),
+                format_date(e.end_date),
             )
         else:
-            table.add_row(category_rich, duration, str(e.start_date), str(e.end_date))
+            table.add_row(
+                category_rich,
+                duration,
+                format_date(e.start_date),
+                format_date(e.end_date),
+            )
 
     console.print(table)
 
