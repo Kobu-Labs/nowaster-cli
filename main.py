@@ -1,4 +1,3 @@
-import json
 import random
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -10,9 +9,9 @@ from rich.console import Console
 from rich.progress_bar import ProgressBar
 from rich.table import Table
 from rich.text import Text
+
 from config import ADDRESS
 from schemas.recordentry import RecordEntryInDb
-
 from schemas.solidentry import SolidEntry, SolidEntryCreate
 
 app = typer.Typer()
@@ -72,11 +71,13 @@ def new(
     duration = parse_time_unit(duration_raw)
     start_date = datetime.now()
     end_date = start_date + timedelta(minutes=duration)
-    entry = SolidEntryCreate(category=category, start_date=start_date, end_date=end_date, description=description)
-    response = requests.post(
-        ADDRESS + "/entry/solid",
-        data = entry.json()
+    entry = SolidEntryCreate(
+        category=category,
+        start_date=start_date,
+        end_date=end_date,
+        description=description,
     )
+    response = requests.post(ADDRESS + "/entry/solid", data=entry.json())
     print(f"created {response.json()}")
 
 
@@ -98,7 +99,7 @@ def all(show_ids: bool = typer.Option(False, "--id")) -> None:
     category_colors = {}
 
     for e in sessions:
-        duration = str((e.end_date - e.start_date).total_seconds()// 60)
+        duration = str((e.end_date - e.start_date).total_seconds() // 60)
         if not e.category in category_colors:
             category_colors[e.category] = get_random_style()
 
@@ -111,9 +112,7 @@ def all(show_ids: bool = typer.Option(False, "--id")) -> None:
                 str(e.end_date),
             )
         else:
-            table.add_row(
-                category_rich, duration, str(e.start_date), str(e.end_date)
-            )
+            table.add_row(category_rich, duration, str(e.start_date), str(e.end_date))
 
     console.print(table)
 
@@ -159,7 +158,7 @@ def abort() -> None:
 def record(
     category: str = typer.Option(..., "--cat", "-c", prompt="cat"),
     description: str = typer.Option("", "--description", prompt="Desc"),
-    ) -> None:
+) -> None:
     active_session = get_active_session()
     if active_session is not None:
         should_continue = typer.confirm(
@@ -167,8 +166,12 @@ def record(
         )
         if not should_continue:
             return
-    response = requests.post(ADDRESS + "/entry/record", json={"category": category,"description":description})
+    response = requests.post(
+        ADDRESS + "/entry/record",
+        json={"category": category, "description": description},
+    )
     print(response)
+
 
 @app.command()
 def timed_active() -> None:
@@ -186,17 +189,50 @@ def timed_active() -> None:
             category_colors[e.category] = get_random_style()
 
         category_rich = Text(e.category, style=category_colors[e.category])
-        table.add_row(
-             str(e.id), category_rich,str(e.start_date)
-        )
+        table.add_row(str(e.id), category_rich, str(e.start_date))
 
     console.print(table)
+
 
 @app.command()
 def finish() -> None:
     response = requests.post(ADDRESS + f"/entry/record/finish/")
     print(response.json())
-    
+
+
+def update_datetime(raw_datetime: datetime) -> datetime:
+    if raw_datetime.year == 1900:
+        # only hours and minutes were passed if year == 1900 -> set year, month, day to today
+        now = datetime.now()
+        return datetime(
+            now.year, now.month, now.day, raw_datetime.hour, raw_datetime.minute
+        )
+    return raw_datetime
+
+
+@app.command()
+def backlog(
+    category: str = typer.Option(..., "--cat", "-c", prompt="cat"),
+    start_date_raw: datetime = typer.Option(
+        ..., "--start", "-s", prompt="start", formats=["%Y-%m-%d %H:%M", "%H:%M"]
+    ),
+    end_date_raw: datetime = typer.Option(
+        ..., "--end", "-e", prompt="end", formats=["%Y-%m-%d %H:%M", "%H:%M"]
+    ),
+    description: str = typer.Option("", "--description", prompt="Desc"),
+) -> None:
+    start_date = update_datetime(start_date_raw)
+    end_date = update_datetime(end_date_raw)
+
+    entry = SolidEntryCreate(
+        category=category,
+        start_date=start_date,
+        end_date=end_date,
+        description=description,
+    )
+    response = requests.post(ADDRESS + "/entry/solid", data=entry.json())
+    print(f"created {response.json()}")
+
 
 if __name__ == "__main__":
     app()
