@@ -1,4 +1,3 @@
-import json
 import random
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -197,6 +196,32 @@ def finish() -> None:
     response = requests.post(ADDRESS + f"/entry/record/finish/")
     print(response.json())
     
+
+def update_datetime(raw_datetime:datetime) -> datetime:
+    if raw_datetime.year == 1900:
+        # only hours and minutes were passed if year == 1900 -> set year, month, day to today
+        now = datetime.now()
+        return datetime(now.year, now.month, now.day, raw_datetime.hour, raw_datetime.minute)
+    return raw_datetime
+
+
+@app.command()
+def backlog(
+    category: str = typer.Option(..., "--cat", "-c", prompt="cat"),
+    start_date_raw: datetime = typer.Option(..., "--start", "-s", prompt="start", formats = ["%Y-%m-%d %H:%M", "%H:%M"]),
+    end_date_raw: datetime = typer.Option(..., "--end", "-e", prompt="end", formats = ["%Y-%m-%d %H:%M", "%H:%M"]),
+    description: str = typer.Option("", "--description", prompt="Desc"),
+) -> None:
+    start_date = update_datetime(start_date_raw)
+    end_date = update_datetime(end_date_raw)
+
+    entry = SolidEntryCreate(category=category, start_date=start_date, end_date=end_date, description=description)
+    response = requests.post(
+        ADDRESS + "/entry/solid",
+        data = entry.json()
+    )
+    print(f"created {response.json()}")
+
 
 if __name__ == "__main__":
     app()
