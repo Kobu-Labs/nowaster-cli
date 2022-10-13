@@ -135,11 +135,14 @@ def get_datetime_progress_ratio(
 
 
 def get_active_session() -> Optional[SolidEntry]:
-    data = requests.get(ADDRESS + "/entry/solid/active").json()
-    if not data:
+    data = requests.get(ADDRESS + "/entry/solid/active/", params={"local_time":datetime.now().isoformat()})
+    if data.status_code != 200:
         return None
 
-    return SolidEntry(**data)
+    if not data.json():
+        return None
+
+    return SolidEntry(**data.json())
 
 
 @app.command()
