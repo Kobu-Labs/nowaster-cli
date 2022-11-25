@@ -1,6 +1,8 @@
+from collections import defaultdict
 import random
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Dict
+import matplotlib.pyplot as plt
 
 import requests
 import typer
@@ -247,6 +249,40 @@ def backlog(
     )
     response = requests.post(ADDRESS + "/entry/solid", data=entry.json())
     print(f"created {response.json()}")
+
+
+def group_categories(data: List[SolidEntry]) -> Dict[str, float]:
+    result = defaultdict(float)
+    for e in data:
+        result[e.category] += (e.end_date - e.start_date).total_seconds() // 3600
+
+    return result
+
+
+def show_graph(start: datetime, end: datetime, data: Dict[str, float]) -> None:
+    categories = data.keys()
+    time_spent = data.values()
+
+    def from_perc(val):
+        return f"{sum(time_spent) / 100 * val:.1f}h"
+
+    plt.pie(
+        time_spent, autopct=from_perc, labels=categories, shadow=False, startangle=140
+    )
+    plt.title(
+        f"Time spent per category\nTotal: {sum(time_spent)}\n{start.strftime('%b %d.')} - {end.strftime('%b %d.')}\nAverage: {sum(time_spent)/60:.2f}"
+    )
+    plt.show()
+
+
+@app.command()
+def graph() -> None:
+    entities = fetch_all()
+    start_date = min(entities, key=lambda x: x.start_date).start_date
+    end_date = max(entities, key=lambda x: x.end_date).end_date
+
+    data = group_categories(entities)
+    show_graph(start_date, end_date, data)
 
 
 if __name__ == "__main__":
