@@ -9,6 +9,7 @@ requests = "*"
 pydantic = "*"
 types-requests = "*"
 python-dotenv = "*"
+matplotlib = "*"
 
 [dev-packages]
 mypy = "*"
