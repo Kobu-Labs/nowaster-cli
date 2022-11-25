@@ -1,9 +1,9 @@
-from collections import defaultdict
 import random
+from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict
-import matplotlib.pyplot as plt
+from typing import DefaultDict, Dict, List, Optional
 
+import matplotlib.pyplot as plt
 import requests
 import typer
 from rich.color import ANSI_COLOR_NAMES
@@ -252,7 +252,7 @@ def backlog(
 
 
 def group_categories(data: List[SolidEntry]) -> Dict[str, float]:
-    result = defaultdict(float)
+    result: DefaultDict[str, float] = defaultdict(float)
     for e in data:
         result[e.category] += (e.end_date - e.start_date).total_seconds() // 3600
 
@@ -263,7 +263,7 @@ def show_graph(start: datetime, end: datetime, data: Dict[str, float]) -> None:
     categories = data.keys()
     time_spent = data.values()
 
-    def from_perc(val):
+    def from_perc(val: float) -> str:
         return f"{sum(time_spent) / 100 * val:.1f}h"
 
     plt.pie(
