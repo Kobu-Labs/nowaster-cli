@@ -297,5 +297,12 @@ def export(filename: str = typer.Argument("nowaster-export")) -> None:
         json.dump(fetch_all_raw(), file)
 
 
+@app.command("import")
+def import_command(filename: str = typer.Argument(...)) -> None:
+    with open(filename, "r") as file:
+        entries = json.load(file)
+        requests.post(ADDRESS + "/entry/solid/import", json=entries)
+
+
 if __name__ == "__main__":
     app()
