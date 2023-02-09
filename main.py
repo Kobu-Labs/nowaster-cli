@@ -1,7 +1,8 @@
+import json
 import random
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import DefaultDict, Dict, List, Optional
+from typing import Any, DefaultDict, Dict, List, Optional, cast
 
 import matplotlib.pyplot as plt
 import requests
@@ -15,6 +16,8 @@ from rich.text import Text
 from config import ADDRESS
 from schemas.recordentry import RecordEntryInDb
 from schemas.solidentry import SolidEntry, SolidEntryCreate
+
+DictStrAny = Dict[str, Any]
 
 app = typer.Typer()
 console = Console()
@@ -83,9 +86,12 @@ def new(
     print(f"created {response.json()}")
 
 
+def fetch_all_raw() -> List[DictStrAny]:
+    return cast(List[DictStrAny], requests.get(ADDRESS + "/entry/solid").json())
+
+
 def fetch_all() -> List[SolidEntry]:
-    data = requests.get(ADDRESS + "/entry/solid").json()
-    return [SolidEntry(**e) for e in data]
+    return [SolidEntry(**e) for e in fetch_all_raw()]
 
 
 def format_date(datetime_obj: datetime) -> str:
@@ -283,6 +289,12 @@ def graph() -> None:
 
     data = group_categories(entities)
     show_graph(start_date, end_date, data)
+
+
+@app.command()
+def export(filename: str = typer.Argument("nowaster-export")) -> None:
+    with open(filename, "w") as file:
+        json.dump(fetch_all_raw(), file)
 
 
 if __name__ == "__main__":
