@@ -135,4 +135,10 @@ def new(
         description=description,
     )
     response = solid.create_new_solid(entry)
-    print(f"created {response.json()}")
+
+    if response.ok:
+        gui.show_new_entry_success(SolidEntry(**response.json()))
+    else:
+        gui.show_generic_error_message(
+            "Failed to create a new entry!\n" + response.reason
+        )

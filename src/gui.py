@@ -1,11 +1,13 @@
 import random
 from collections import defaultdict
 from datetime import datetime
-from typing import DefaultDict, Dict, List
+from typing import Callable, DefaultDict, Dict, List, Optional
 
 import matplotlib.pyplot as plt
+import rich
 from rich.color import ANSI_COLOR_NAMES
 from rich.console import Console
+from rich.panel import Panel
 from rich.progress_bar import ProgressBar
 from rich.table import Table
 from rich.text import Text
@@ -105,3 +107,38 @@ def show_entry_table(entries: List[SolidEntry], show_ids: bool = False) -> None:
             )
 
     console.print(table)
+
+
+def show_new_entry_success(entry: SolidEntry) -> None:
+    time: Callable[[datetime], str] = lambda x: datetime.strftime(x, "%H:%M")
+    duration = (entry.end_date - entry.start_date).total_seconds() // 60
+
+    # <start_date> ------------<duration> mins------------> <end_date>
+    content = (
+        "[bold][green3]"
+        + time(entry.start_date)
+        + " "
+        + 12 * "-"
+        + str(duration)
+        + " mins"
+        + 12 * "-"
+        + "> "
+        + time(entry.end_date)
+    )
+
+    if entry.description:
+        content += f"\n[grey37]Description: {entry.description}"
+
+    rich.print(
+        Panel.fit(
+            content, title=f"[{get_random_style()}]{entry.category} entry created!"
+        )
+    )
+
+
+def show_generic_error_message(
+    message: str, exception: Optional[Exception] = None
+) -> None:
+    if exception is not None:
+        message += f"\nError message: {exception}"
+    rich.print(Panel.fit("[red]" + message, title="[red]Error occured!"))
