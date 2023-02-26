@@ -95,6 +95,7 @@ def show_entry_table(entries: List[SolidEntry], show_ids: bool = False) -> None:
             table.add_row(
                 str(e.id),
                 category_rich,
+                duration,
                 format_date(e.start_date),
                 format_date(e.end_date),
             )
