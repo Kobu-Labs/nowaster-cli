@@ -24,7 +24,7 @@ def graph() -> None:
 @app.command()
 def export(filename: str = typer.Argument("nowaster-export")) -> None:
     with open(filename, "w") as file:
-        json.dump(solid.fetch_all_raw(), file)
+        json.dump(solid.fetch_all_raw(), file, indent=4)
 
 
 @app.command("import")
